@@ -97,6 +97,9 @@ which is treated as healthy (any status `< 500`).
 
 ## License
 
-This repository only contains Docker build files. The upstream
-[`excalidraw/excalidraw-mcp`](https://github.com/excalidraw/excalidraw-mcp) project is licensed by its
-authors; see that repository for its license terms.
+The files in this repository (Docker build files) are released under the
+[MIT License](LICENSE).
+
+Images built from this repository bundle the upstream
+[`excalidraw/excalidraw-mcp`](https://github.com/excalidraw/excalidraw-mcp) project, which remains
+under the license chosen by its authors; see that repository for its terms.
