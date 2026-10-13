@@ -9,27 +9,50 @@ inside the image at build time.
 
 ## Why
 
-- **One command** to get a running MCP server (`docker compose up --build`).
+- **One command** to get a running MCP server (`docker compose up` pulls the published image).
 - **Reproducible**: pin the upstream ref via a build arg.
 - **Persistent**: diagram checkpoints survive container restarts via a named volume.
 - **Stateless host**: no Node/pnpm/bun toolchain needed on the host.
 
 ## Quick start
 
+The image is published to GHCR by CI on every push to `main` and on `v*` tags.
+
 ```bash
-docker compose up --build
+docker compose up
 ```
 
-The server listens on <http://localhost:3001/mcp>.
+This pulls `ghcr.io/sysarcher/excalidraw-mcp-docker:latest` and serves on
+<http://localhost:3001/mcp>.
 
-Or without Compose:
+Without Compose:
 
 ```bash
-docker build -t excalidraw-mcp:local .
 docker run --rm -p 3001:3001 \
   -v excalidraw-checkpoints:/tmp/excalidraw-mcp-checkpoints \
-  excalidraw-mcp:local
+  ghcr.io/sysarcher/excalidraw-mcp-docker:latest
 ```
+
+### Published image
+
+`ghcr.io/sysarcher/excalidraw-mcp-docker`
+
+| Tag | Source |
+| --- | --- |
+| `latest` | latest push to `main` |
+| `main` | tip of `main` |
+| `sha-<short>` | a specific commit |
+| `1.2.3`, `1.2`, `1` | a `v1.2.3` git tag |
+
+Pin a version with `DOCKER_TAG`, e.g. `DOCKER_TAG=sha-537180c docker compose up`.
+
+### Build from source
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
+```
+
+This builds locally via the `Dockerfile` and tags the result with the same image name.
 
 ## Connect an MCP client
 
@@ -73,6 +96,10 @@ docker build --build-arg EXCALIDRAW_MCP_REF=v0.1.0 -t excalidraw-mcp:0.1.0 .
 | `/tmp/excalidraw-mcp-checkpoints` | `FileCheckpointStore` output. Mount a volume to keep checkpoints across restarts. |
 
 ## How the image is built
+
+The [publish workflow](.github/workflows/publish.yml) builds a multi-arch image
+(`linux/amd64`, `linux/arm64`) and pushes it to GHCR on pushes to `main` and on `v*`
+tags, with provenance and SBOM attestations. Locally, the same `Dockerfile` is used:
 
 1. **builder** (`node:22-bookworm-slim`): installs `git`/`ca-certificates`, enables corepack,
    clones upstream at `EXCALIDRAW_MCP_REF`, runs `pnpm install --frozen-lockfile` and `pnpm run build`
