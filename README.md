@@ -56,10 +56,49 @@ This builds locally via the `Dockerfile` and tags the result with the same image
 
 ## Connect an MCP client
 
-Point any remote/HTTP MCP client at `http://localhost:3001/mcp`. Example (`opencode.jsonc`):
+The server supports two transports: **Streamable HTTP** (default) and **stdio**
+(`node dist/index.js --stdio`). opencode works with either — pick one.
+
+### opencode — stdio (recommended)
+
+No port and no long-running daemon: opencode launches a throwaway container that
+speaks MCP over stdio and exits with the session. `docker run` pulls the image on
+demand, so there is nothing to start first. Checkpoints persist in the
+`excalidraw-mcp-checkpoints` volume.
 
 ```jsonc
 {
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "excalidraw": {
+      "type": "local",
+      "command": [
+        "docker", "run", "-i", "--rm",
+        "-v", "excalidraw-mcp-checkpoints:/tmp/excalidraw-mcp-checkpoints",
+        "ghcr.io/sysarcher/excalidraw-mcp-docker:latest",
+        "node", "dist/index.js", "--stdio"
+      ],
+      "enabled": true
+    }
+  }
+}
+```
+
+> Pass the full `node dist/index.js --stdio` command — the base image sets
+> `docker-entrypoint.sh` as `ENTRYPOINT`, so `--stdio` on its own is not enough.
+> Drop the `-v …` line if checkpoints don't need to survive between sessions.
+
+### opencode — Streamable HTTP
+
+Run the server (default command) and point a remote MCP client at it:
+
+```bash
+docker compose up -d
+```
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
   "mcp": {
     "excalidraw": {
       "type": "remote",
@@ -68,6 +107,12 @@ Point any remote/HTTP MCP client at `http://localhost:3001/mcp`. Example (`openc
   }
 }
 ```
+
+### Other clients
+
+Any Streamable HTTP MCP client can connect to `http://localhost:3001/mcp` while the
+server is running; any stdio client can use the `docker run -i … --stdio`
+invocation shown above.
 
 ## Configuration
 
@@ -104,8 +149,9 @@ tags, with provenance and SBOM attestations. Locally, the same `Dockerfile` is u
 1. **builder** (`node:22-bookworm-slim`): installs `git`/`ca-certificates`, enables corepack,
    clones upstream at `EXCALIDRAW_MCP_REF`, runs `pnpm install --frozen-lockfile` and `pnpm run build`
    (`tsc` + `vite` + `bun build`).
-2. **runtime** (`node:22-slim`): copies `dist/` and `package.json`, runs `node dist/index.js`,
-   and exposes port `3001`.
+2. **runtime** (`node:22-slim`): copies `dist/` and `package.json` and runs `node dist/index.js`.
+   By default it starts the **Streamable HTTP** server on port `3001`; passing `--stdio`
+   (`node dist/index.js --stdio`) starts the **stdio** transport instead.
 
 A `HEALTHCHECK` issues a `GET /mcp` request — the server answers with a 4xx when no session exists,
 which is treated as healthy (any status `< 500`).
