@@ -1,11 +1,9 @@
 services:
   excalidraw-mcp:
-    build:
-      context: .
-      args:
-        # Pin to a branch, tag, or commit for reproducible builds.
-        EXCALIDRAW_MCP_REF: main
-    image: excalidraw-mcp:local
+    # Published to GHCR by CI (.github/workflows/publish.yml) on every push to
+    # `main` and on `v*` tags. Pin a version via DOCKER_TAG, e.g.
+    #   DOCKER_TAG=sha-537180c docker compose up
+    image: ghcr.io/sysarcher/excalidraw-mcp-docker:${DOCKER_TAG:-latest}
     container_name: excalidraw-mcp
     ports:
       - "3001:3001"
@@ -17,6 +15,9 @@ services:
       # Mounting a volume keeps diagram checkpoints across container restarts.
       - excalidraw-checkpoints:/tmp/excalidraw-mcp-checkpoints
     restart: unless-stopped
+
+    # To build from source instead of pulling the published image:
+    #   docker compose -f docker-compose.yml -f docker-compose.build.yml up --build
 
 volumes:
   excalidraw-checkpoints:
