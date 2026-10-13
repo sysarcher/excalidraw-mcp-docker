@@ -1,0 +1,22 @@
+services:
+  excalidraw-mcp:
+    build:
+      context: .
+      args:
+        # Pin to a branch, tag, or commit for reproducible builds.
+        EXCALIDRAW_MCP_REF: main
+    image: excalidraw-mcp:local
+    container_name: excalidraw-mcp
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      NODE_ENV: production
+    volumes:
+      # FileCheckpointStore writes to os.tmpdir()/excalidraw-mcp-checkpoints.
+      # Mounting a volume keeps diagram checkpoints across container restarts.
+      - excalidraw-checkpoints:/tmp/excalidraw-mcp-checkpoints
+    restart: unless-stopped
+
+volumes:
+  excalidraw-checkpoints:
